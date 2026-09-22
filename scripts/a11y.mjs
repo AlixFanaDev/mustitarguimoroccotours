@@ -1,21 +1,13 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const port = Number(process.env.PORT || 8080);
-const pages = [
-  "index.html",
-  "services.html",
-  "about.html",
-  "blog.html",
-  "single.html",
-  "contact.html",
-  "sahara-desert-trek.html",
-  "imperial-cities.html",
-  "private-morocco-road-trip.html",
-];
+const pages = (await readdir(root, { recursive: true })).filter(
+  (file) => file.endsWith(".html") && !file.startsWith("node_modules/"),
+);
 
 let pa11y;
 try {

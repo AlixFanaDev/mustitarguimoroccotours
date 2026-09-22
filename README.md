@@ -14,6 +14,25 @@ No install is required for `npm start` — it is a dependency-free Node server
 
 Need a preview with zero Node? `python3 -m http.server 8080`.
 
+## Languages
+
+The site ships in three languages — English (root), Spanish (`/es/`) and
+Italian (`/it/`) — with an EN/ES/IT selector in the navigation of every page,
+plus `hreflang`/`canonical` alternates and localized sitemap entries.
+
+- The localized pages are **hand-maintained translations**: `es/*.html` and
+  `it/*.html` mirror the English pages one-to-one. When you edit English copy,
+  apply the same edit to both localized copies (they share structure, ids,
+  classes and asset paths — only text, meta and locale URLs differ).
+- `npm run build:locales` performs a **structural sync only**: it refreshes
+  `<html lang>`, canonical/hreflang, `og:url`/`og:locale`, `../` asset prefixes,
+  the language selector and sitemap entries. It never rewrites translated text.
+  If a new English page has no localized copy yet, the script scaffolds one and
+  warns that it still needs a real translation.
+- `npm test` validates all 27 pages, including locale wiring (`<html lang>`,
+  self-referencing `hreflang`, canonical under the right locale, `og:locale`,
+  language selector present, every English page has `es/` + `it/` copies).
+
 ## Checks
 
 ```bash

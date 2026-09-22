@@ -10,6 +10,30 @@
   const year = $('#year');
   if (year) year.textContent = new Date().getFullYear();
 
+  /* ---------- language strings (follows <html lang>) ---------- */
+  const lang = (document.documentElement.lang || 'en').slice(0, 2);
+  const strings = {
+    en: {
+      toDark: 'Switch to dark theme',
+      toLight: 'Switch to light theme',
+      planTrip: 'Hello Musti Targui Morocco tours, I would like to plan a trip.',
+      sending: 'Opening WhatsApp with your inquiry…',
+    },
+    es: {
+      toDark: 'Cambiar a tema oscuro',
+      toLight: 'Cambiar a tema claro',
+      planTrip: 'Hola Musti Targui Morocco tours, me gustaría planificar un viaje.',
+      sending: 'Abriendo WhatsApp con tu consulta…',
+    },
+    it: {
+      toDark: 'Passa al tema scuro',
+      toLight: 'Passa al tema chiaro',
+      planTrip: 'Ciao Musti Targui Morocco tours, voglio organizzare un viaggio.',
+      sending: 'Apro WhatsApp con la tua richiesta…',
+    },
+  };
+  const t = strings[lang] || strings.en;
+
   /* ---------- theme ---------- */
   const root = document.documentElement;
   const themeToggle = $('.theme-toggle');
@@ -20,8 +44,9 @@
     root.setAttribute('data-theme', theme);
     if (themeToggle) {
       themeToggle.textContent = theme === 'light' ? '☾' : '☀';
-      themeToggle.setAttribute('aria-label', theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
-      themeToggle.setAttribute('title', theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
+      const label = theme === 'light' ? t.toDark : t.toLight;
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
     }
     storage.set('theme', theme);
   };
@@ -50,7 +75,9 @@
     'private-morocco-road-trip.html': 'services.html',
   };
   const current = navMap[pageName] || pageName;
-  const currentLink = $(`.main-nav a[href="${current}"]`);
+  // Direct children only: the language selector also links "index.html" and
+  // would otherwise swallow the current-page state from the real nav link.
+  const currentLink = $(`.main-nav > a[href="${current}"]`);
   if (currentLink) {
     currentLink.classList.add('active');
     currentLink.setAttribute('aria-current', 'page');
@@ -86,17 +113,25 @@
       const hp = $('input[name="website"]', form);
       if (hp && hp.value) return;
       const data = new FormData(form);
+      // Prefer the visible <label> text so the WhatsApp message is localized
+      // along with the form (name attributes stay English in every locale).
+      const labelFor = name => {
+        const field = [...form.elements].find(el => el.name === name && el.id);
+        const label = field && form.querySelector(`label[for="${field.id}"]`);
+        const text = label ? label.textContent : name;
+        return String(text).trim().replace(/[:：]\s*$/, '');
+      };
       const lines = [
-        'Hello Musti Targui Morocco tours, I would like to plan a trip.',
+        t.planTrip,
         '',
         ...[...data.entries()]
           .filter(([key]) => key.toLowerCase() !== 'website')
-          .map(([key, value]) => `${key}: ${value}`),
+          .map(([key, value]) => `${labelFor(key)}: ${value}`),
       ];
       const url = new URL(wa.href);
       url.searchParams.set('text', lines.join('\n'));
       const status = $('.form-status', form);
-      if (status) status.textContent = 'Opening WhatsApp with your inquiry…';
+      if (status) status.textContent = t.sending;
       window.open(url.toString(), '_blank', 'noopener');
     });
   }

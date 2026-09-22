@@ -263,3 +263,17 @@
 @media(max-width:1000px){.tour-layout{grid-template-columns:1fr;gap:44px}.booking-card{position:static}}
 @media(max-width:800px){.tour-specs{grid-template-columns:1fr}.inc-exc{grid-template-columns:1fr}.route-day{grid-template-columns:1fr;gap:8px}.page-hero-actions{flex-wrap:wrap}}
 @media(max-width:440px){.feature h3{font-size:1.1rem}.feature p{font-size:.84rem}}
+
+/* Keep clear air between the logo lockup and the nav (the language selector is
+   the first nav item). Below 801px the nav collapses into the dropdown menu,
+   so this only applies to the desktop bar. */
+@media(min-width:801px){.nav-wrap{gap:clamp(10px,calc(2vw - 6px),18px)}}
+
+/* Static language routes: / (English), /es/ (Spanish), and /it/ (Italian). */
+.language-selector{display:flex;align-items:center;gap:2px;border:1px solid rgba(241,235,224,.28);font-family:var(--mono);font-size:9px;letter-spacing:.06em}
+.language-selector a{padding:6px 7px;color:#f1ebe0;line-height:1}
+/* Active/hover state sits on the topbar's always-light sand accent, so the ink
+   is fixed dark here: var(--ink) turns light in the light theme and would drop
+   this text to 1.83:1 (WCAG fail) while the background stays #d9ad77. */
+.language-selector a:hover,.language-selector a[aria-current="true"]{background:var(--sand);color:#101312}
+@media(max-width:800px){.language-selector{order:-1;align-self:flex-start;margin:2px 0 8px}.main-nav .language-selector a{padding:7px 9px}}

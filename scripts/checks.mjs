@@ -1,10 +1,12 @@
 import { readdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import vm from "node:vm";
 
 const root = process.cwd();
-const pages = (await readdir(root)).filter((f) => f.endsWith(".html"));
+const pages = (await readdir(root, { recursive: true })).filter(
+  (f) => f.endsWith(".html") && !f.startsWith("node_modules/"),
+);
 const errors = [];
 
 function check(cond, msg) {
@@ -37,6 +39,7 @@ function localHrefs(html) {
 
 for (const page of pages) {
   const raw = await readFile(join(root, page), "utf8");
+  const pageDir = dirname(join(root, page));
   // Strip HTML comments so disabled sections are not checked as live markup.
   const html = raw.replace(/<!--[\s\S]*?-->/g, "");
   check(
@@ -55,11 +58,11 @@ for (const page of pages) {
   check(/<main\b/.test(html), `${page}: missing <main> landmark`);
   check(/class="skip-link"/.test(html), `${page}: missing skip link`);
   for (const ref of localHrefs(html)) {
-    check(existsSync(join(root, ref)), `${page}: broken reference "${ref}"`);
+    check(existsSync(join(pageDir, ref)), `${page}: broken reference "${ref}"`);
   }
   for (const src of html.matchAll(/<source srcset="([^"]+\.webp)"/g)) {
     check(
-      existsSync(join(root, src[1])),
+      existsSync(join(pageDir, src[1])),
       `${page}: missing webp source "${src[1]}"`,
     );
   }
@@ -71,6 +74,51 @@ for (const page of pages) {
     } catch {
       errors.push(`${page}: invalid JSON-LD`);
     }
+  }
+}
+
+// Locale coverage: every English root page needs es/ and it/ copies wired up.
+const site = "https://www.mustitarguimoroccotours.com";
+const localeCodes = { es: { lang: "es", og: "es_ES" }, it: { lang: "it", og: "it_IT" } };
+const rootPages = pages.filter((p) => !p.includes("/"));
+
+for (const page of rootPages) {
+  const english = await readFile(join(root, page), "utf8");
+  const englishOg = english.match(/property="og:locale"\s+content="([^"]+)"/);
+  check(
+    !englishOg || englishOg[1] === "en_US",
+    `${page}: og:locale must be en_US`,
+  );
+  for (const [code, cfg] of Object.entries(localeCodes)) {
+    const copy = `${code}/${page}`;
+    check(pages.includes(copy), `${page}: missing ${code}/ localized copy`);
+    if (!pages.includes(copy)) continue;
+    const html = await readFile(join(root, copy), "utf8");
+    check(
+      html.includes(`<html lang="${cfg.lang}">`),
+      `${copy}: <html lang> must be "${cfg.lang}"`,
+    );
+    check(
+      html.includes(`<link rel="canonical" href="${site}/${code}/`),
+      `${copy}: canonical must point into /${code}/`,
+    );
+    check(
+      html.includes(`hreflang="${cfg.lang}" href="${site}/${code}/`),
+      `${copy}: missing self-referencing hreflang="${cfg.lang}"`,
+    );
+    check(
+      html.includes('hreflang="x-default"'),
+      `${copy}: missing x-default hreflang`,
+    );
+    const og = html.match(/property="og:locale"\s+content="([^"]+)"/);
+    check(
+      !og || og[1] === cfg.og,
+      `${copy}: og:locale must be ${cfg.og}`,
+    );
+    check(
+      html.includes('class="language-selector"'),
+      `${copy}: missing language selector`,
+    );
   }
 }
 
