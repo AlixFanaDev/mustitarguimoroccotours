@@ -36,8 +36,13 @@ function localHrefs(html) {
 }
 
 for (const page of pages) {
-  const html = await readFile(join(root, page), "utf8");
-  check(html.includes('<meta charset="utf-8">'), `${page}: missing charset`);
+  const raw = await readFile(join(root, page), "utf8");
+  // Strip HTML comments so disabled sections are not checked as live markup.
+  const html = raw.replace(/<!--[\s\S]*?-->/g, "");
+  check(
+    /<meta\s+charset="utf-8"\s*\/?>/i.test(html),
+    `${page}: missing charset`,
+  );
   check(
     /<meta name="viewport" content="width=device-width/.test(html),
     `${page}: missing viewport`,

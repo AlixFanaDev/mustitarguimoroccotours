@@ -1,4 +1,3 @@
-import { spawnSync, spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
@@ -18,10 +17,11 @@ const pages = [
   "private-morocco-road-trip.html",
 ];
 
-const probe = spawnSync("npx", ["--no-install", "pa11y", "--version"], {
-  stdio: "ignore",
-});
-if (probe.status !== 0) {
+let pa11y;
+try {
+  const mod = await import("pa11y");
+  pa11y = mod.default ?? mod;
+} catch {
   console.error("pa11y not installed. Run `npm ci` to install it, then retry.");
   console.error(
     "npm test still runs the pure link/structure checks without it.",
@@ -60,24 +60,19 @@ await new Promise((r) => server.listen(port, r));
 
 const failures = [];
 for (const page of pages) {
-  const result = spawnSync(
-    "npx",
-    [
-      "--no-install",
-      "pa11y",
-      "--standard",
-      "WCAG2AA",
-      "--json",
-      `http://127.0.0.1:${port}/${page}`,
-    ],
-    { encoding: "utf8" },
-  );
   let issues = [];
   try {
-    issues = JSON.parse(result.stdout);
-  } catch {
+    // Awaited call keeps the event loop free so the server above can respond.
+    const results = await pa11y(`http://127.0.0.1:${port}/${page}`, {
+      standard: "WCAG2AA",
+      timeout: 30000,
+    });
+    issues = results.issues ?? [];
+  } catch (e) {
     failures.push(
-      `${page}: pa11y could not run (${result.stderr?.slice(0, 120) || "unknown"})`,
+      `${page}: pa11y could not run (${String(e.message || e)
+        .slice(0, 120)
+        .replace(/\s+/g, " ")})`,
     );
     continue;
   }
