@@ -1,0 +1,19 @@
+{
+  "name": "musti-targui-tours",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static marketing site for Musti Targui Morocco tours, Merzouga.",
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "preview": "node scripts/server.mjs",
+    "test": "node scripts/checks.mjs",
+    "test:a11y": "node scripts/a11y.mjs"
+  },
+  "devDependencies": {
+    "pa11y": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
